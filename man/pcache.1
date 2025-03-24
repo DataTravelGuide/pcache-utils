@@ -1,0 +1,239 @@
+PCACHECTRL(1)                  pcache-utils Manual                  PCACHECTRL(1)
+
+NAME
+    pcache - userspace tool to manage CXL Block Device (PCACHE) components
+
+SYNOPSIS
+    pcache <command> [<args>]
+
+DESCRIPTION
+    pcache is a command-line tool within pcache-utils, designed to manage CXL Block Device (PCACHE) resources, such as transports, hosts, backends, and block devices.
+
+COMMANDS
+    Managing Transports:
+        tp-reg
+            Register a new transport.
+            -H, --host <hostname>
+                 Assign a hostname for the transport.
+            -p, --path <path>
+                 Specify the transport path (e.g., /dev/pmem0).
+            -f, --format
+                 Format the specified transport path. Defaults to false.
+            -F, --force
+                 Force formatting of the transport path, overriding existing settings. Defaults to false.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache tp-reg -H myhost -p /dev/pmem0 -F -f
+
+        tp-unreg
+            Unregister a transport, removing its association with the specified ID.
+            -t, --transport <tid>
+                 Specify the transport ID to unregister.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache tp-unreg --transport 1
+
+        tp-list
+            List all registered transports along with their details.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache tp-list
+
+    Managing Hosts:
+        host-list
+            List all hosts associated with a transport.
+            -t, --transport <tid>
+                 Specify the transport ID to list associated hosts.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache host-list -t 1
+
+    Managing Backends:
+        backend-start
+            Start a backend on a specified transport.
+            -t, --transport <tid>
+                 Specify the transport ID for the backend.
+            -p, --path <path>
+                 Define the backend block device to be used.
+            -c, --cache-size <size>
+                 Set the backend cache size with units (e.g., 512M, 1G).
+            -n, --handlers <count>
+                 Define the number of handlers to initialize, up to a maximum of 128.
+            -D, --start-dev
+                 Start a block device at the same time.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache backend-start -t 1 -p /dev/sda -c 512M -n 1
+
+        backend-stop
+            Stop a specified backend.
+            -t, --transport <tid>
+                 Specify the transport ID to which the backend is linked.
+            -b, --backend <bid>
+                 Specify the backend ID to stop.
+            -F, --force
+                 Force stop backend, clear dead blkdevs for this backends.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache backend-stop -t 1 -b 3
+
+        backend-list
+            List all backends on this host.
+            -t, --transport <tid>
+                 Specify the transport ID for listing backends.
+            -a, --all
+                 List backends on all hosts.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache backend-list -t 1
+
+    Managing Block Devices:
+        dev-start
+            Start a block device on a backend.
+            -t, --transport <tid>
+                 Specify the transport ID.
+            -b, --backend <bid>
+                 Specify the backend ID.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache dev-start -t 1 -b 3
+
+        dev-stop
+            Stop a block device.
+            -t, --transport <tid>
+                 Specify the transport ID.
+            -d, --dev <dev_id>
+                 Specify the device ID.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache dev-stop -t 1 -d 5
+
+        dev-list
+            List all block devices on this host.
+            -t, --transport <tid>
+                 Specify the transport ID.
+            -a, --all
+                 List all blkdevs on all hosts.
+            -h, --help
+                 Display help for this command.
+            Example:
+                 pcache dev-list -t 1
+
+EXAMPLES
+    Register a transport with formatting:
+        pcache tp-reg -H node-1 -p /dev/pmem0 -F -f
+
+    List all transports this node registered:
+       # pcache tp-list
+       [
+           {
+               "magic": "0x65b05efa96c596ef",
+               "version": 1,
+               "flags": "0x0000000a",
+               "host_area_off": 8192,
+               "bytes_per_host_info": 4096,
+               "host_num": 16,
+               "backend_area_off": 139264,
+               "bytes_per_backend_info": 4096,
+               "backend_num": 383,
+               "blkdev_area_off": 3276800,
+               "bytes_per_blkdev_info": 4096,
+               "blkdev_num": 383,
+               "segment_area_off": 6414336,
+               "bytes_per_segment": 16777216,
+               "segment_num": 383,
+               "path": "/dev/pmem0"
+           }
+       ]
+
+    List all hosts for a transport:
+       # pcache host-list
+       [
+           {
+               "host_id": 0,
+               "hostname": "node0",
+               "alive": true
+           },
+           {
+               "host_id": 1,
+               "hostname": "host1",
+               "alive": true
+           }
+       ]
+
+    Start a backend with specified cache and handlers:
+        pcache backend-start -t 1 -p /dev/sda -c 1G -n 2
+
+    Start a block device on a backend:
+        pcache dev-start -t 1 -b 3
+
+    List all backends for a transport:
+       # pcache backend-list -t 0
+       [
+           {
+               "backend_id": 0,
+               "host_id": 0,
+               "backend_path": "/dev/sdb",
+               "alive": false,
+               "cache_segs": 64,
+               "cache_gc_percent": 70,
+               "cache_used_segs": 7,
+               "blkdevs": [
+                   {
+                       "blkdev_id": 0,
+                       "host_id": 0,
+                       "backend_id": 0,
+                       "dev_name": "/dev/pcache0",
+                       "alive": false
+                   }
+               ]
+           },
+           {
+               "backend_id": 1,
+               "host_id": 0,
+               "backend_path": "/dev/sda",
+               "alive": true,
+               "cache_segs": 0,
+               "cache_gc_percent": 70,
+               "cache_used_segs": 3,
+               "blkdevs": [
+                   {
+                       "blkdev_id": 1,
+                       "host_id": 1,
+                       "backend_id": 1,
+                       "dev_name": "/dev/pcache1",
+                       "alive": true
+                   }
+               ]
+           }
+       ]
+    List all block devices for a transport:
+       # pcache dev-list
+       [
+           {
+               "blkdev_id": 0,
+               "host_id": 0,
+               "backend_id": 0,
+               "dev_name": "/dev/pcache0",
+               "alive": false
+           },
+           {
+               "blkdev_id": 1,
+               "host_id": 1,
+               "backend_id": 1,
+               "dev_name": "/dev/pcache1",
+               "alive": true
+           }
+       ]
+
+SEE ALSO
+    Full documentation at: https://datatravelguide.github.io/dtg-blog/pcache/pcache.html
