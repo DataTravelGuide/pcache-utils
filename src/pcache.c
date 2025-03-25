@@ -112,6 +112,7 @@ static struct option long_options[] =
 	{"start-dev", no_argument, 0, 'D'},
 	{"dev", required_argument,0, 'd'},
 	{"path", required_argument,0, 'p'},
+	{"queues", required_argument,0, 'q'},
 	{"format", no_argument, 0, 'f'},
 	{"cache-size", required_argument,0, 'c'},
 	{"handlers", required_argument,0, 'n'},
@@ -171,7 +172,7 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 	while (true) {
 		int option_index = 0;
 
-		arg = getopt_long(argc, argv, "a:h:c:H:b:d:p:f:c:n:D:F", long_options, &option_index);
+		arg = getopt_long(argc, argv, "a:h:c:H:b:d:p:q:f:c:n:D:F", long_options, &option_index);
 		/* End of the options? */
 		if (arg == -1) {
 			break;
@@ -206,6 +207,9 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 			}
 
 			strncpy(options->co_path, optarg, sizeof(options->co_path) - 1);
+			break;
+		case 'q':
+			options->co_queues = strtoul(optarg, NULL, 10);
 			break;
 		case 'c':
 			options->co_cache_size = opt_to_MB(optarg);
@@ -420,7 +424,7 @@ int pcache_backing_start(pcache_opt_t *options) {
 
 	pcachesys_cache_init(&pcache_cache, options->co_cache_id);
 
-	snprintf(cmd, sizeof(cmd), "op=backing-start,path=%s", options->co_path);
+	snprintf(cmd, sizeof(cmd), "op=backing-start,path=%s,queues=%u", options->co_path, options->co_queues);
 
 	if (options->co_cache_size != 0)
 	    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), ",cache_size=%u", options->co_cache_size);

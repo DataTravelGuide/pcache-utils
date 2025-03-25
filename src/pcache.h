@@ -49,6 +49,7 @@ struct pcache_options
 	unsigned int		co_cache_id;
 	unsigned int		co_backing_id;
 	unsigned int		co_dev_id;
+	unsigned int		co_queues;
 	bool			co_start_dev;
 	bool			co_all;
 };
