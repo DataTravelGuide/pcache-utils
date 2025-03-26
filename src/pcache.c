@@ -163,6 +163,7 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 	options->co_dev_id = UINT_MAX;
 	options->co_handlers = UINT_MAX;
 	options->co_cache_id = 0;
+	options->co_queues = 1;
 
 	if (options->co_cmd == CCT_INVALID) {
 		usage();
