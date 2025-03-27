@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "libpcache.h"
+#include "pcache.h"
 
 #define SYSFS_PCACHE_CACHE_REGISTER "/sys/bus/pcache/cache_dev_register"
 #define SYSFS_PCACHE_CACHE_UNREGISTER "/sys/bus/pcache/cache_dev_unregister"
