@@ -1,5 +1,96 @@
 # pcache-utils, userspace tools used to manage PCACHE
 
+pcache is a command-line utility from pcache-utils used to manage pcache
+(PMem to be cache of block device) resources including cache devices and backing devices.
 
-Checkout the [PCACHE](https://datatravelguide.github.io/dtg-blog/pcache/pcache.html) for PCACHE details.
+COMMANDS
 
+  Managing Cache Devices:
+
+    cache-start
+        Register a new cache device.
+
+        Options:
+            -p, --path <path>
+                Specify the path to the cache device.
+            -f, --format
+                Format the specified path (default: false).
+            -F, --force
+                Force format the path, ignoring existing data (default: false).
+            -h, --help
+                Show help message for this command.
+
+        Example:
+            pcache cache-start -p /dev/pmem0 -F -f
+
+    cache-stop
+        Unregister an existing cache device.
+
+        Options:
+            -c, --cache <cid>
+                Specify the cache ID to stop.
+            -h, --help
+                Show help message for this command.
+
+        Example:
+            pcache cache-stop --cache 0
+
+    cache-list
+        List all registered cache devices.
+
+        Options:
+            -h, --help
+                Show help message for this command.
+
+        Example:
+            pcache cache-list
+
+
+  Managing Backing Devices:
+
+    backing-start
+        Register a new backing device.
+
+        Options:
+            -c, --cache <cid>
+                Specify the cache ID to attach the backing device to.
+            -p, --path <path>
+                Specify the path to the backing device.
+            -q, --queues <queues>
+                Set number of queues for the backing device.
+            -s, --cache-size <size>
+                Set the cache size (units: K, M, G).
+            -h, --help
+                Show help message for this command.
+
+        Example:
+            pcache backing-start -p /dev/nvme1n1 -s 512M
+
+    backing-stop
+        Unregister a backing device.
+
+        Options:
+            -c, --cache <cid>
+                Specify the cache ID.
+            -b, --backing <bid>
+                Specify the backing device ID.
+            -h, --help
+                Show help message for this command.
+
+        Example:
+            pcache backing-stop --backing 0
+
+    backing-list
+        List all backing devices for a cache.
+
+        Options:
+            -c, --cache <cid>
+                Specify the cache ID.
+            -h, --help
+                Show help message for this command.
+
+        Example:
+            pcache backing-list -c 0
+
+SEE ALSO
+    Full documentation at: https://datatravelguide.github.io/dtg-blog/pcache/pcache.html
