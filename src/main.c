@@ -41,23 +41,14 @@ static int pcache_run(pcache_opt_t *options)
 		case CCT_CACHE_LIST:
 			ret = pcache_cache_list(options);
 			break;
-		case CCT_BACKEND_START:
+		case CCT_BACKING_START:
 			ret = pcache_backing_start(options);
 			break;
-		case CCT_BACKEND_STOP:
+		case CCT_BACKING_STOP:
 			ret = pcache_backing_stop(options);
 			break;
-		case CCT_BACKEND_LIST:
+		case CCT_BACKING_LIST:
 			ret = pcache_backing_list(options);
-			break;
-		case CCT_DEV_START:
-			ret = pcache_dev_start(options);
-			break;
-		case CCT_DEV_STOP:
-			ret = pcache_dev_stop(options);
-			break;
-		case CCT_DEV_LIST:
-			ret = pcache_dev_list(options);
 			break;
 		default:
 			printf("Unknown command: %u\n", options->co_cmd);
@@ -71,8 +62,6 @@ int main (int argc, char* argv[])
 {
 	int ret;
 	pcache_opt_t options;
-
-	printf("into main");
 
 	pcache_options_parser(argc, argv, &options);
 

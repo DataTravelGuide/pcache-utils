@@ -43,7 +43,7 @@ static void usage ()
 	fprintf(stdout, "   backing-start   Start a backing\n");
 	fprintf(stdout, "                   -c, --cache <cid>        Specify cache ID\n");
 	fprintf(stdout, "                   -p, --path <path>            Specify backing path\n");
-	fprintf(stdout, "                   -c, --cache-size <size>      Set cache size (units: K, M, G)\n");
+	fprintf(stdout, "                   -s, --cache-size <size>      Set cache size (units: K, M, G)\n");
 	fprintf(stdout, "                   -h, --help                   Print this help message\n");
 	fprintf(stdout, "                   Example: %s backing-start -p /path -c 512M -n 1\n\n", PCACHE_PROGRAM_NAME);
 
@@ -56,28 +56,8 @@ static void usage ()
 
 	fprintf(stdout, "   backing-list    List all backings \n");
 	fprintf(stdout, "                   -c, --cache <cid>        Specify cache ID\n");
-	fprintf(stdout, "                   -a, --all                    List backings on all hosts\n");
 	fprintf(stdout, "                   -h, --help                   Print this help message\n");
 	fprintf(stdout, "                   Example: %s backing-list\n\n", PCACHE_PROGRAM_NAME);
-
-	fprintf(stdout, "Managing block devices:\n");
-	fprintf(stdout, "   dev-start       Start a block device\n");
-	fprintf(stdout, "                   -c, --cache <cid>        Specify cache ID\n");
-	fprintf(stdout, "                   -b, --backing <bid>          Specify backing ID\n");
-	fprintf(stdout, "                   -h, --help                   Print this help message\n");
-	fprintf(stdout, "                   Example: %s dev-start --backing 0\n\n", PCACHE_PROGRAM_NAME);
-
-	fprintf(stdout, "   dev-stop        Stop a block device\n");
-	fprintf(stdout, "                   -c, --cache <cid>        Specify cache ID\n");
-	fprintf(stdout, "                   -d, --dev <dev_id>           Specify device ID\n");
-	fprintf(stdout, "                   -h, --help                   Print this help message\n");
-	fprintf(stdout, "                   Example: %s dev-stop --dev 0\n\n", PCACHE_PROGRAM_NAME);
-
-	fprintf(stdout, "   dev-list        List all blkdevs on this host\n");
-	fprintf(stdout, "                   -c, --cache <cid>        Specify cache ID\n");
-	fprintf(stdout, "                   -a, --all                    List blkdevs on all hosts\n");
-	fprintf(stdout, "                   -h, --help                   Print this help message\n");
-	fprintf(stdout, "                   Example: %s blkdev-list\n\n", PCACHE_PROGRAM_NAME);
 }
 
 static void pcache_options_init(pcache_opt_t* options)
@@ -93,7 +73,6 @@ enum PCACHE_CMD_TYPE pcache_get_cmd_type(char *cmd_str)
 		return CCT_INVALID;
 	}
 
-	printf("cmd : %s\n", cmd_str);
 	for (i = 0; i <= CCT_INVALID; i++) {
 		pcache_cmd_t cmd = pcache_cmd_tables[i];
 		if (!strncmp(cmd_str, cmd.cmd_name, strlen(cmd.cmd_name))) {
@@ -109,15 +88,11 @@ static struct option long_options[] =
 	{"help", no_argument,0, 'h'},
 	{"cache", required_argument,0, 'c'},
 	{"backing", required_argument,0, 'b'},
-	{"start-dev", no_argument, 0, 'D'},
-	{"dev", required_argument,0, 'd'},
 	{"path", required_argument,0, 'p'},
 	{"queues", required_argument,0, 'q'},
 	{"format", no_argument, 0, 'f'},
-	{"cache-size", required_argument,0, 'c'},
-	{"handlers", required_argument,0, 'n'},
+	{"cache-size", required_argument,0, 's'},
 	{"force", no_argument, 0, 'F'},
-	{"all", no_argument, 0, 'a'},
 	{0, 0, 0, 0},
 };
 
@@ -161,7 +136,6 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 	options->co_cmd = pcache_get_cmd_type(argv[1]);
 	options->co_backing_id = UINT_MAX;
 	options->co_dev_id = UINT_MAX;
-	options->co_handlers = UINT_MAX;
 	options->co_cache_id = 0;
 	options->co_queues = 1;
 
@@ -173,7 +147,7 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 	while (true) {
 		int option_index = 0;
 
-		arg = getopt_long(argc, argv, "a:h:c:H:b:d:p:q:f:c:n:D:F", long_options, &option_index);
+		arg = getopt_long(argc, argv, "a:h:c:H:b:d:p:q:f:s:n:D:F", long_options, &option_index);
 		/* End of the options? */
 		if (arg == -1) {
 			break;
@@ -184,7 +158,7 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 		case 'h':
 			usage();
 			exit(EXIT_SUCCESS);
-		case 't':
+		case 'c':
 			options->co_cache_id = strtoul(optarg, NULL, 10);
 			break;
 		case 'f':
@@ -212,23 +186,8 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 		case 'q':
 			options->co_queues = strtoul(optarg, NULL, 10);
 			break;
-		case 'c':
+		case 's':
 			options->co_cache_size = opt_to_MB(optarg);
-			break;
-
-		case 'n':
-			options->co_handlers = strtoul(optarg, NULL, 10);
-			if (options->co_handlers > PCACHE_BACKEND_HANDLERS_MAX) {
-				printf("Handlers exceed maximum of %d!\n", PCACHE_BACKEND_HANDLERS_MAX);
-				usage();
-				exit(EXIT_FAILURE);
-			}
-			break;
-		case 'a':
-			options->co_all = true;
-			break;
-		case 'D':
-			options->co_start_dev = true;
 			break;
 		case '?':
 			usage();
@@ -349,11 +308,6 @@ int pcache_cache_list(pcache_opt_t *opt)
 	return ret;
 }
 
-static int dev_start(unsigned int cache_id, unsigned int backing_id)
-{
-	return 0;
-}
-
 int pcache_backing_start(pcache_opt_t *options) {
 	char adm_path[PCACHE_PATH_LEN];
 	char cmd[PCACHE_PATH_LEN * 3] = { 0 };
@@ -472,58 +426,5 @@ int pcache_backing_list(pcache_opt_t *options)
 	}
 
 	json_decref(array); // Free JSON array memory
-	return 0;
-}
-
-int pcache_dev_start(pcache_opt_t *options) {
-	if (options->co_backing_id == UINT_MAX) {
-		printf("--backing required for dev-start command\n");
-		return -EINVAL;
-	}
-
-	return dev_start(options->co_cache_id, options->co_backing_id);
-}
-
-#define MAX_RETRIES 3
-#define RETRY_INTERVAL 500 // in milliseconds
-
-int pcache_dev_stop(pcache_opt_t *options) {
-	char adm_path[PCACHE_PATH_LEN];
-	char cmd[PCACHE_PATH_LEN * 3] = { 0 };
-	int ret;
-	int attempt;
-
-	if (options->co_dev_id == UINT_MAX) {
-		printf("--dev required for dev-stop command\n");
-		return -EINVAL;
-	}
-
-	snprintf(cmd, sizeof(cmd), "op=dev-stop,dev_id=%u", options->co_dev_id);
-
-	cache_adm_path(options->co_cache_id, adm_path, sizeof(adm_path));
-
-	// Retry mechanism for sysfs_write_attribute
-	for (attempt = 0; attempt < MAX_RETRIES; ++attempt) {
-		ret = pcachesys_write_value(adm_path, cmd);
-		if (ret == 0)
-			break; // Success, exit the loop
-
-		printf("Attempt %d/%d failed to write command '%s'. Error: %s\n",
-			attempt + 1, MAX_RETRIES, cmd, strerror(ret));
-
-		// Wait before retrying
-		usleep(RETRY_INTERVAL * 1000); // Convert milliseconds to microseconds
-	}
-
-	if (ret != 0) {
-		printf("Failed to write command '%s' after %d attempts. Final Error: %s\n",
-			cmd, MAX_RETRIES, strerror(ret));
-	}
-
-	return ret;
-}
-
-int pcache_dev_list(pcache_opt_t *options)
-{
 	return 0;
 }

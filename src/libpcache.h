@@ -12,22 +12,6 @@ struct pcache_cache {
 	unsigned int cache_id;
 };
 
-struct pcache_host {
-	int host_id;
-	char hostname[PCACHE_NAME_LEN];
-	bool alive;
-};
-
-struct pcache_blkdev {
-	unsigned int blkdev_id;
-	unsigned int host_id;
-	unsigned int backing_id;
-	char dev_name[PCACHE_NAME_LEN];
-	bool alive;
-};
-
-#define PCACHEB_BLKDEV_COUNT_MAX   1
-
 struct pcache_backing {
 	unsigned int backing_id;
 	char backing_path[PCACHE_PATH_LEN];
