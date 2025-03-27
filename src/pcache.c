@@ -267,14 +267,6 @@ json_t *pcache_cache_to_json(struct pcache_cache *pcache_cache) {
 
 	json_object_set_new(json_obj, "version", json_integer(pcache_cache->version));
 	json_object_set_new(json_obj, "flags", json_string(flags_str));
-	json_object_set_new(json_obj, "backing_area_off", json_integer(pcache_cache->backing_area_off));
-	json_object_set_new(json_obj, "bytes_per_backing_info", json_integer(pcache_cache->bytes_per_backing_info));
-	json_object_set_new(json_obj, "backing_num", json_integer(pcache_cache->backing_num));
-	json_object_set_new(json_obj, "blkdev_area_off", json_integer(pcache_cache->blkdev_area_off));
-	json_object_set_new(json_obj, "bytes_per_blkdev_info", json_integer(pcache_cache->bytes_per_blkdev_info));
-	json_object_set_new(json_obj, "blkdev_num", json_integer(pcache_cache->blkdev_num));
-	json_object_set_new(json_obj, "segment_area_off", json_integer(pcache_cache->segment_area_off));
-	json_object_set_new(json_obj, "bytes_per_segment", json_integer(pcache_cache->bytes_per_segment));
 	json_object_set_new(json_obj, "segment_num", json_integer(pcache_cache->segment_num));
 	json_object_set_new(json_obj, "cache_id", json_integer(pcache_cache->cache_id));
 
@@ -320,7 +312,6 @@ int pcache_cache_list(pcache_opt_t *opt)
 	struct pcache_cache pcache_cache;
 	json_t *array = json_array();
 	int ret = 0;
-	printf("into cache-list\n");
 
 	for (int i = 0; i < PCACHE_CACHE_MAX; i++) {
 		ret = pcachesys_cache_init(&pcache_cache, i);
