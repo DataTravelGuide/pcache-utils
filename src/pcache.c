@@ -16,7 +16,7 @@ static void usage ()
 {
 	fprintf(stdout, "usage: %s <command> [<args>]\n\n", PCACHE_PROGRAM_NAME);
 	fprintf(stdout, "Description:\n");
-	fprintf(stdout, "   pcache-utils: userspace tools to manage PCACHE (CXL Block Device)\n");
+	fprintf(stdout, "   pcache-utils: userspace tools to manage PCACHE\n");
 	fprintf(stdout, "   See the documentation for details on PCACHE:\n");
 	fprintf(stdout, "   https://datatravelguide.github.io/dtg-blog/pcache/pcache.html\n\n");
 
@@ -43,14 +43,14 @@ static void usage ()
 	fprintf(stdout, "   backing-start   Start a backing\n");
 	fprintf(stdout, "                   -c, --cache <cid>        Specify cache ID\n");
 	fprintf(stdout, "                   -p, --path <path>            Specify backing path\n");
+	fprintf(stdout, "                   -q, --queues <queues>        number of queues\n");
 	fprintf(stdout, "                   -s, --cache-size <size>      Set cache size (units: K, M, G)\n");
 	fprintf(stdout, "                   -h, --help                   Print this help message\n");
-	fprintf(stdout, "                   Example: %s backing-start -p /path -c 512M -n 1\n\n", PCACHE_PROGRAM_NAME);
+	fprintf(stdout, "                   Example: %s backing-start -p /path -s 512M \n\n", PCACHE_PROGRAM_NAME);
 
 	fprintf(stdout, "   backing-stop    Stop a backing\n");
 	fprintf(stdout, "                   -c, --cache <cid>        Specify cache ID\n");
 	fprintf(stdout, "                   -b, --backing <bid>          Specify backing ID\n");
-	fprintf(stdout, "                   -F, --force                  Force stop backing\n");
 	fprintf(stdout, "                   -h, --help                   Print this help message\n");
 	fprintf(stdout, "                   Example: %s backing-stop --backing 0\n\n", PCACHE_PROGRAM_NAME);
 

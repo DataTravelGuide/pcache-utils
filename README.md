@@ -1,5 +1,5 @@
-# pcache-utils, userspace tools used to manage PCACHE （CXL Block Device）
+# pcache-utils, userspace tools used to manage PCACHE
 
 
-Checkout the [PCACHE (CXL Block Device)](https://datatravelguide.github.io/dtg-blog/pcache/pcache.html) for PCACHE details.
+Checkout the [PCACHE](https://datatravelguide.github.io/dtg-blog/pcache/pcache.html) for PCACHE details.
 

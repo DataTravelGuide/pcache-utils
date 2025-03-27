@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <getopt.h>
 
-
 /* Max size of a file name */
 #define PCACHE_PATH_LEN 256
 #define PCACHE_CACHE_MAX       1024                        /* Maximum number of cache instances */
@@ -15,9 +14,6 @@
 #define PCACHE_BACKING_START "backing-start"
 #define PCACHE_BACKING_STOP "backing-stop"
 #define PCACHE_BACKING_LIST "backing-list"
-#define PCACHE_DEV_START "dev-start"
-#define PCACHE_DEV_STOP "dev-stop"
-#define PCACHE_DEV_LIST "dev-list"
 
 #define PCACHE_BACKING_HANDLERS_MAX 128
 
