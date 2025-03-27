@@ -32,9 +32,9 @@ static inline void cache_adm_path(int cache_id, char *buffer, size_t buffer_size
 }
 
 #define PCACHESYS_PATH(OBJ, MEMBER)                                                                            \
-static inline void OBJ##_##MEMBER##_path(unsigned int t_id, unsigned int obj_id, char *buffer, size_t buffer_size) \
+static inline void OBJ##_##MEMBER##_path(unsigned int cache_id, unsigned int obj_id, char *buffer, size_t buffer_size) \
 {                                                                                                           \
-        snprintf(buffer, buffer_size, "%s%u/pcache_" #OBJ "s/" #OBJ "%u/" #MEMBER, SYSFS_CACHE_BASE_PATH, t_id, obj_id); \
+        snprintf(buffer, buffer_size, "%s%u/" #OBJ "%u/" #MEMBER, SYSFS_CACHE_BASE_PATH, cache_id, obj_id); \
 }
 
 PCACHESYS_PATH(host, alive)
@@ -45,12 +45,10 @@ PCACHESYS_PATH(blkdev, backing_id)
 PCACHESYS_PATH(blkdev, alive)
 PCACHESYS_PATH(blkdev, mapped_id)
 
-PCACHESYS_PATH(backing, host_id)
-PCACHESYS_PATH(backing, path)
-PCACHESYS_PATH(backing, alive)
-PCACHESYS_PATH(backing, cache_segs)
-PCACHESYS_PATH(backing, cache_gc_percent)
-PCACHESYS_PATH(backing, cache_used_segs)
+PCACHESYS_PATH(backing_dev, path)
+PCACHESYS_PATH(backing_dev, cache_segs)
+PCACHESYS_PATH(backing_dev, cache_gc_percent)
+PCACHESYS_PATH(backing_dev, cache_used_segs)
 
 int pcachesys_backing_blkdevs_clear(struct pcache_cache *pcachet, unsigned int backing_id);
 
@@ -70,6 +68,6 @@ struct pcachesys_walk_ctx {
 };
 
 int walk_cache_devs(struct pcachesys_walk_ctx *walk_ctx);
-int for_each_backing_dev(struct pcachesys_walk_ctx *walk_ctx);
+int walk_backing_devs(struct pcachesys_walk_ctx *walk_ctx);
 
 #endif // PCACHESYS_H

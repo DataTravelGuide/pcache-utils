@@ -462,9 +462,45 @@ int pcache_backing_stop(pcache_opt_t *options) {
 	return pcachesys_write_value(adm_path, cmd);
 }
 
+static struct backing_list_ctx_data {
+	json_t *array;
+	struct pcache_cache *pcache_cache;
+};
+
+static int backing_dev_list_cb(struct dirent *entry, struct pcachesys_walk_ctx *walk_ctx)
+{
+	unsigned int backing_dev_id;
+	struct backing_list_ctx_data *data = walk_ctx->data;
+	json_t *array = data->array;
+	struct pcache_cache *pcache_cache = data->pcache_cache;
+	struct pcache_backing backing;
+	json_t *json_obj;
+	int ret;
+
+	backing_dev_id = strtoul(entry->d_name + strlen("backing_dev"), NULL, 10);
+	ret = pcachesys_backing_init(pcache_cache, &backing, backing_dev_id); // Initialize current backing
+	if (ret < 0) {
+		printf("failed to init backing: %s\n", strerror(ret));
+		return ret;
+	}
+
+	json_t *json_backing = json_object();
+	json_object_set_new(json_backing, "backing_path", json_string(backing.backing_path));
+	json_object_set_new(json_backing, "cache_segs", json_integer(backing.cache_segs));
+	json_object_set_new(json_backing, "cache_gc_percent", json_integer(backing.cache_gc_percent));
+	json_object_set_new(json_backing, "cache_used_segs", json_integer(backing.cache_used_segs));
+
+	json_array_append_new(array, json_backing);
+
+	return 0;
+}
+
 int pcache_backing_list(pcache_opt_t *options)
 {
 	struct pcache_cache pcache_cache;
+	struct pcachesys_walk_ctx walk_ctx = { 0 };
+	struct backing_list_ctx_data ctx_data = { 0 };
+
 	json_t *array = json_array(); // Create JSON array for backings
 	if (array == NULL) {
 		fprintf(stderr, "Error creating JSON array\n");
@@ -477,50 +513,17 @@ int pcache_backing_list(pcache_opt_t *options)
 		return ret;
 	}
 
-	// Iterate through all backings and generate JSON object for each
-	for (unsigned int i = 0; i < pcache_cache.backing_num; i++) {
-		struct pcache_backing backing;
-		ret = pcachesys_backing_init(&pcache_cache, &backing, i); // Initialize current backing
-		if (ret < 0) {
-			continue;
-		}
+	ctx_data.array = array;
+	ctx_data.pcache_cache = &pcache_cache;
 
-		if (!options->co_all && backing.host_id != pcache_cache.host_id)
-			continue;
+	walk_ctx.data = &ctx_data;
+	walk_ctx.cb = backing_dev_list_cb;
+	sprintf(walk_ctx.path, SYSFS_CACHE_BASE_PATH"%u", options->co_cache_id);
 
-		// Create JSON object and add fields for the backing
-		json_t *json_backing = json_object();
-		json_object_set_new(json_backing, "backing_id", json_integer(backing.backing_id));
-		json_object_set_new(json_backing, "host_id", json_integer(backing.host_id));
-		json_object_set_new(json_backing, "backing_path", json_string(backing.backing_path));
-		json_object_set_new(json_backing, "alive", json_boolean(backing.alive));
-		json_object_set_new(json_backing, "cache_segs", json_integer(backing.cache_segs));
-		json_object_set_new(json_backing, "cache_gc_percent", json_integer(backing.cache_gc_percent));
-		json_object_set_new(json_backing, "cache_used_segs", json_integer(backing.cache_used_segs));
 
-		// Create JSON array for blkdevs within the backing
-		json_t *json_blkdevs = json_array();
-		for (unsigned int j = 0; j < backing.dev_num; j++) {
-			struct pcache_blkdev *blkdev = &backing.blkdevs[j];
-
-			// Create JSON object for each blkdev and add fields
-			json_t *json_blkdev = json_object();
-			json_object_set_new(json_blkdev, "blkdev_id", json_integer(blkdev->blkdev_id));
-			json_object_set_new(json_blkdev, "host_id", json_integer(blkdev->host_id));
-			json_object_set_new(json_blkdev, "backing_id", json_integer(blkdev->backing_id));
-			json_object_set_new(json_blkdev, "dev_name", json_string(blkdev->dev_name));
-			json_object_set_new(json_blkdev, "alive", json_boolean(blkdev->alive));
-
-			// Append blkdev JSON object to the blkdevs JSON array
-			json_array_append_new(json_blkdevs, json_blkdev);
-		}
-
-		// Add blkdevs array to the backing JSON object
-		json_object_set_new(json_backing, "blkdevs", json_blkdevs);
-
-		// Append backing JSON object to the main JSON array
-		json_array_append_new(array, json_backing);
-	}
+	ret = walk_backing_devs(&walk_ctx);
+	if (ret)
+		return ret;
 
 	// Convert JSON array to a formatted string and print to stdout
 	char *json_str = json_dumps(array, JSON_INDENT(4));

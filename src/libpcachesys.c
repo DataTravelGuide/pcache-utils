@@ -320,31 +320,15 @@ int pcachesys_backing_init(struct pcache_cache *pcachet, struct pcache_backing *
 	// Initialize backing_id
 	backing->backing_id = backing_id;
 
-	// Read host_id
-	backing_host_id_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
-	ret = read_sysfs_value(path, buf, sizeof(buf));
-	if (ret < 0 || buf[0] == '\0') {
-		return -ENOENT; // Return if host_id is empty
-	}
-	backing->host_id = atoi(buf);
-
 	// Read backing_path
-	backing_path_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
+	backing_dev_path_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
 	ret = read_sysfs_value(path, backing->backing_path, sizeof(backing->backing_path));
 	if (ret < 0) {
 		return ret;
 	}
 
-	// Read alive status
-	backing_alive_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
-	ret = read_sysfs_value(path, buf, sizeof(buf));
-	if (ret < 0) {
-		return ret;
-	}
-	backing->alive = (strcmp(buf, "true") == 0);
-
 	// Read cache_segs directly from the new path
-	backing_cache_segs_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
+	backing_dev_cache_segs_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
 	ret = read_sysfs_value(path, buf, sizeof(buf));
 	if (ret < 0) {
 		return ret;
@@ -352,40 +336,19 @@ int pcachesys_backing_init(struct pcache_cache *pcachet, struct pcache_backing *
 	backing->cache_segs = (unsigned int)atoi(buf);
 
 	// Read cache_gc_percent directly from the new path
-	backing_cache_gc_percent_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
+	backing_dev_cache_gc_percent_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
 	ret = read_sysfs_value(path, buf, sizeof(buf));
 	if (ret < 0) {
 		return ret;
 	}
 	backing->cache_gc_percent = (unsigned int)atoi(buf);
 
-	backing_cache_used_segs_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
+	backing_dev_cache_used_segs_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
 	ret = read_sysfs_value(path, buf, sizeof(buf));
 	if (ret < 0) {
 		return ret;
 	}
 	backing->cache_used_segs = (unsigned int)atoi(buf);
-
-	// Initialize block devices
-	backing->dev_num = 0;
-	for (unsigned int i = 0; i < pcachet->blkdev_num; i++) {
-		struct pcache_blkdev blkdev;
-		ret = pcachesys_blkdev_init(pcachet, &blkdev, i);
-		if (ret < 0) {
-			continue;
-		}
-
-		// Check if blkdev's backing_id matches the current backing_id
-		if (blkdev.backing_id == backing_id) {
-			// Add to backing's blkdevs array if it matches
-			if (backing->dev_num < PCACHEB_BLKDEV_COUNT_MAX) {
-				memcpy(&backing->blkdevs[backing->dev_num++], &blkdev, sizeof(struct pcache_blkdev));
-			} else {
-				fprintf(stderr, "Warning: Exceeded max blkdev count for backing %u\n", backing_id);
-				break;
-			}
-		}
-	}
 
 	return 0;
 }
