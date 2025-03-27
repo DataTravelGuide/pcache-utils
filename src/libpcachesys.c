@@ -26,7 +26,7 @@ int pcachesys_cache_init(struct pcache_cache *pcachet, int cache_id) {
 	/* Open the file */
 	file = fopen(path, "r");
 	if (!file) {
-		//printf("failed to open %s\n", path);
+		printf("failed to open %s\n", path);
 		return -errno;  // Return error code
 	}
 

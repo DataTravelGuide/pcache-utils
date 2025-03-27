@@ -245,9 +245,6 @@ int pcache_cache_start(pcache_opt_t *opt)
 		return -EINVAL;
 	}
 
-	printf("path=%s,force=%d,format=%d",
-		opt->co_path, opt->co_force, opt->co_format);
-
 	sprintf(tr_buff, "path=%s,force=%d,format=%d",
 		opt->co_path, opt->co_force, opt->co_format);
 
