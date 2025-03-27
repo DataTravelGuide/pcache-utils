@@ -174,7 +174,6 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 			options->co_dev_id = strtoul(optarg, NULL, 10);
 			break;
 		case 'p':
-			printf("p: %s\n", optarg);
 			if (!optarg || (strlen(optarg) == 0)) {
 				printf("path is null or empty!!\n");
 				usage();
@@ -295,23 +294,57 @@ int pcache_cache_list(pcache_opt_t *opt)
 	walk_ctx.cb = cache_dev_list_cb;
 	walk_ctx.data = array;
 	strcpy(walk_ctx.path, SYSFS_PCACHE_DEVICES_PATH);
-	walk_cache_devs(&walk_ctx);
+	ret = walk_cache_devs(&walk_ctx);
+	if (ret)
+		goto err;
 
 	// Print the JSON array
 	char *json_str = json_dumps(array, JSON_INDENT(4));
 	printf("%s\n", json_str);
-
-	// Clean up
-	json_decref(array);
 	free(json_str);
 
+err:
+	// Clean up
+	json_decref(array);
+
 	return ret;
+}
+
+struct find_backing_ctx_data {
+	char *path;
+	struct pcache_cache *pcache_cache;
+};
+
+static int find_backing_cb(struct dirent *entry, struct pcachesys_walk_ctx *walk_ctx)
+{
+	unsigned int backing_dev_id;
+	struct find_backing_ctx_data *data = walk_ctx->data;
+	char *path = data->path;
+	struct pcache_cache *pcache_cache = data->pcache_cache;
+	struct pcache_backing backing;
+	int ret;
+
+	backing_dev_id = strtoul(entry->d_name + strlen("backing_dev"), NULL, 10);
+	ret = pcachesys_backing_init(pcache_cache, &backing, backing_dev_id); // Initialize current backing
+	if (ret < 0) {
+		printf("failed to init backing: %s\n", strerror(ret));
+		return ret;
+	}
+
+	if (strcmp(backing.backing_path, path) == 0) {
+		printf("%s\n", backing.logic_dev_path);
+		return 0;
+	}
+
+	return 0;
 }
 
 int pcache_backing_start(pcache_opt_t *options) {
 	char adm_path[PCACHE_PATH_LEN];
 	char cmd[PCACHE_PATH_LEN * 3] = { 0 };
 	struct pcache_cache pcache_cache;
+	struct pcachesys_walk_ctx walk_ctx = { 0 };
+	struct find_backing_ctx_data ctx_data = { 0 };
 	unsigned int backing_id;
 	int ret;
 
@@ -324,6 +357,17 @@ int pcache_backing_start(pcache_opt_t *options) {
 
 	cache_adm_path(options->co_cache_id, adm_path, sizeof(adm_path));
 	ret = pcachesys_write_value(adm_path, cmd);
+	if (ret)
+		return ret;
+
+	ctx_data.path = options->co_path;
+	ctx_data.pcache_cache = &pcache_cache;
+
+	walk_ctx.data = &ctx_data;
+	walk_ctx.cb = find_backing_cb;
+	sprintf(walk_ctx.path, SYSFS_CACHE_BASE_PATH"%u", options->co_cache_id);
+
+	ret = walk_backing_devs(&walk_ctx);
 	if (ret)
 		return ret;
 
@@ -353,7 +397,7 @@ int pcache_backing_stop(pcache_opt_t *options) {
 	return pcachesys_write_value(adm_path, cmd);
 }
 
-static struct backing_list_ctx_data {
+struct backing_list_ctx_data {
 	json_t *array;
 	struct pcache_cache *pcache_cache;
 };
@@ -401,10 +445,8 @@ int pcache_backing_list(pcache_opt_t *options)
 	}
 
 	int ret = pcachesys_cache_init(&pcache_cache, options->co_cache_id);
-	if (ret < 0) {
-		json_decref(array);
-		return ret;
-	}
+	if (ret < 0)
+		goto err;
 
 	ctx_data.array = array;
 	ctx_data.pcache_cache = &pcache_cache;
@@ -416,15 +458,13 @@ int pcache_backing_list(pcache_opt_t *options)
 
 	ret = walk_backing_devs(&walk_ctx);
 	if (ret)
-		return ret;
+		goto err;
 
 	// Convert JSON array to a formatted string and print to stdout
 	char *json_str = json_dumps(array, JSON_INDENT(4));
-	if (json_str != NULL) {
-		printf("%s\n", json_str);
-		free(json_str);
-	}
-
+	printf("%s\n", json_str);
+	free(json_str);
+err:
 	json_decref(array); // Free JSON array memory
 	return 0;
 }
