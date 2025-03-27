@@ -351,69 +351,6 @@ int pcache_cache_list(pcache_opt_t *opt)
 
 static int dev_start(unsigned int cache_id, unsigned int backing_id)
 {
-	char adm_path[PCACHE_PATH_LEN];
-	char cmd[PCACHE_PATH_LEN * 3] = { 0 };
-	struct pcache_cache pcache_cache;
-	struct pcache_backing old_backing, new_backing;
-	bool found = false;
-	struct pcache_blkdev *found_dev = NULL;
-	int ret;
-
-	ret = pcachesys_cache_init(&pcache_cache, cache_id);
-	if (ret)
-		return ret;
-
-	/* Clear block devices associated with the backing */
-	ret = pcachesys_backing_blkdevs_clear(&pcache_cache, backing_id);
-	if (ret)
-		return ret;
-
-	/* Get information about the current backing */
-	ret = pcachesys_backing_init(&pcache_cache, &old_backing, backing_id);
-	if (ret) {
-		printf("Failed to get current backing information. Error: %d\n", ret);
-		return ret;
-	}
-
-	/* Prepare the dev-start command */
-	snprintf(cmd, sizeof(cmd), "op=dev-start,backing_id=%u", backing_id);
-
-	/* Get the sysfs attribute path */
-	cache_adm_path(cache_id, adm_path, sizeof(adm_path));
-
-	ret = pcachesys_write_value(adm_path, cmd);
-	if (ret)
-		return ret;
-
-	/* Get information about the backing after dev-start */
-	ret = pcachesys_backing_init(&pcache_cache, &new_backing, backing_id);
-	if (ret) {
-		printf("Failed to get new backing information. Error: %d\n", ret);
-		return ret;
-	}
-
-	/* Compare old_backing and new_backing to identify new block devices */
-	if (new_backing.dev_num > old_backing.dev_num) {
-		for (unsigned int i = 0; i < new_backing.dev_num; i++) {
-			for (unsigned int j = 0; j < old_backing.dev_num; j++) {
-				if (new_backing.blkdevs[i].blkdev_id == old_backing.blkdevs[j].blkdev_id)
-					goto next;
-				break;
-			}
-
-			found_dev = &new_backing.blkdevs[i];
-			break;
-next:
-			continue;
-		}
-	}
-
-	if (!found_dev) {
-		printf("No new block devices were added.\n");
-		return 1;
-	}
-
-	printf("%s\n", found_dev->dev_name);
 	return 0;
 }
 
@@ -485,10 +422,12 @@ static int backing_dev_list_cb(struct dirent *entry, struct pcachesys_walk_ctx *
 	}
 
 	json_t *json_backing = json_object();
+	json_object_set_new(json_backing, "backing_id", json_integer(backing.backing_id));
 	json_object_set_new(json_backing, "backing_path", json_string(backing.backing_path));
 	json_object_set_new(json_backing, "cache_segs", json_integer(backing.cache_segs));
 	json_object_set_new(json_backing, "cache_gc_percent", json_integer(backing.cache_gc_percent));
 	json_object_set_new(json_backing, "cache_used_segs", json_integer(backing.cache_used_segs));
+	json_object_set_new(json_backing, "logic_dev", json_string(backing.logic_dev_path));
 
 	json_array_append_new(array, json_backing);
 
@@ -586,49 +525,5 @@ int pcache_dev_stop(pcache_opt_t *options) {
 
 int pcache_dev_list(pcache_opt_t *options)
 {
-	struct pcache_cache pcache_cache;
-	json_t *array = json_array(); // Create JSON array
-	if (array == NULL) {
-		fprintf(stderr, "Error creating JSON array\n");
-		return -1;
-	}
-
-	int ret = pcachesys_cache_init(&pcache_cache, options->co_cache_id);
-	if (ret < 0) {
-		json_decref(array);
-		return ret;
-	}
-
-	// Iterate through all blkdevs and generate JSON object for each
-	for (unsigned int i = 0; i < pcache_cache.blkdev_num; i++) {
-		struct pcache_blkdev blkdev;
-		ret = pcachesys_blkdev_init(&pcache_cache, &blkdev, i); // Initialize current blkdev
-		if (ret < 0) {
-			continue;
-		}
-
-		if (!options->co_all && blkdev.host_id != pcache_cache.host_id)
-			continue;
-
-		// Create JSON object and add fields
-		json_t *json_blkdev = json_object();
-		json_object_set_new(json_blkdev, "blkdev_id", json_integer(blkdev.blkdev_id));
-		json_object_set_new(json_blkdev, "host_id", json_integer(blkdev.host_id));
-		json_object_set_new(json_blkdev, "backing_id", json_integer(blkdev.backing_id));
-		json_object_set_new(json_blkdev, "dev_name", json_string(blkdev.dev_name));
-		json_object_set_new(json_blkdev, "alive", json_boolean(blkdev.alive));
-
-		// Append JSON object to JSON array
-		json_array_append_new(array, json_blkdev);
-	}
-
-	// Convert JSON array to a formatted string and print to stdout
-	char *json_str = json_dumps(array, JSON_INDENT(4));
-	if (json_str != NULL) {
-		printf("%s\n", json_str);
-		free(json_str);
-	}
-
-	json_decref(array); // Free JSON array memory
 	return 0;
 }

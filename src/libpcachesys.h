@@ -46,6 +46,7 @@ PCACHESYS_PATH(blkdev, alive)
 PCACHESYS_PATH(blkdev, mapped_id)
 
 PCACHESYS_PATH(backing_dev, path)
+PCACHESYS_PATH(backing_dev, mapped_id)
 PCACHESYS_PATH(backing_dev, cache_segs)
 PCACHESYS_PATH(backing_dev, cache_gc_percent)
 PCACHESYS_PATH(backing_dev, cache_used_segs)

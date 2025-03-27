@@ -350,6 +350,14 @@ int pcachesys_backing_init(struct pcache_cache *pcachet, struct pcache_backing *
 	}
 	backing->cache_used_segs = (unsigned int)atoi(buf);
 
+	backing_dev_mapped_id_path(pcachet->cache_id, backing_id, path, PCACHE_PATH_LEN);
+	ret = read_sysfs_value(path, buf, sizeof(buf));
+	if (ret < 0) {
+		return ret;
+	}
+	backing->logic_dev_id = (unsigned int)atoi(buf);
+	sprintf(backing->logic_dev_path, "/dev/pcache%u", backing->logic_dev_id);
+
 	return 0;
 }
 
@@ -362,9 +370,6 @@ int pcachesys_find_backing_id_from_path(struct pcache_cache *pcachet, char *path
 
 		ret = pcachesys_backing_init(pcachet, &backing, i);
 		if (ret)
-			continue;
-
-		if (backing.host_id != pcachet->host_id)
 			continue;
 
 		if (strcmp(backing.backing_path, path) == 0) {
