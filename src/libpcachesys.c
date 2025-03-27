@@ -433,3 +433,65 @@ out:
 	sysfs_close_attribute(sysattr);
 	return ret;
 }
+
+int walk_cache_devs(struct pcachesys_walk_ctx *walk_ctx)
+{
+	unsigned int cache_dev_id;
+	struct dirent *entry;
+	DIR *dir;
+	int ret = 0;
+
+	dir = opendir(walk_ctx->path);
+	if (!dir) {
+		printf("Failed to open dir: %s, %s\n", walk_ctx->path, strerror(errno));
+		ret = -1;
+		goto err;
+	}
+
+        while ((entry = readdir(dir)) != NULL) {
+		if (strncmp(entry->d_name, "cache_dev", strlen("cache_dev")) == 0) {
+			cache_dev_id = strtoul(entry->d_name + strlen("cache_dev"), NULL, 10);
+			ret = walk_ctx->cb(entry, walk_ctx);
+			if (ret) {
+				printf("callback failed for cache_dev%u\n", cache_dev_id);
+				goto close_dir;
+			}
+		}
+	}
+
+close_dir:
+	closedir(dir);
+err:
+	return ret;
+}
+
+int walk_backing_devs(struct pcachesys_walk_ctx *walk_ctx)
+{
+	unsigned int backing_dev_id;
+	struct dirent *entry;
+	DIR *dir;
+	int ret = 0;
+
+	dir = opendir(walk_ctx->path);
+	if (!dir) {
+		printf("Failed to open dir: %s, %s\n", walk_ctx->path, strerror(errno));
+		ret = -1;
+		goto err;
+	}
+
+        while ((entry = readdir(dir)) != NULL) {
+		if (strncmp(entry->d_name, "backing_dev", strlen("backing_dev")) == 0) {
+			backing_dev_id = strtoul(entry->d_name + strlen("backing_dev"), NULL, 10);
+			ret = walk_ctx->cb(entry, walk_ctx);
+			if (ret) {
+				printf("callback failed for backing_dev%u\n", backing_dev_id);
+				goto close_dir;
+			}
+		}
+	}
+
+close_dir:
+	closedir(dir);
+err:
+	return ret;
+}

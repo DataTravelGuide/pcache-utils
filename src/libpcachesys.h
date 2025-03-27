@@ -7,6 +7,7 @@
 
 #define SYSFS_PCACHE_CACHE_REGISTER "/sys/bus/pcache/cache_dev_register"
 #define SYSFS_PCACHE_CACHE_UNREGISTER "/sys/bus/pcache/cache_dev_unregister"
+#define SYSFS_PCACHE_DEVICES_PATH "/sys/bus/pcache/devices/"
 #define SYSFS_CACHE_BASE_PATH "/sys/bus/pcache/devices/cache_dev"
 
 static inline void cache_info_path(int cache_id, char *buffer, size_t buffer_size)
@@ -59,5 +60,16 @@ int pcachesys_blkdev_init(struct pcache_cache *pcachet, struct pcache_blkdev *bl
 int pcachesys_backing_init(struct pcache_cache *pcachet, struct pcache_backing *backing, unsigned int backing_id);
 int pcachesys_find_backing_id_from_path(struct pcache_cache *pcachet, char *path, unsigned int *backing_id);
 int pcachesys_write_value(const char *path, const char *value);
+
+struct pcachesys_walk_ctx;
+typedef int (*pcachesys_cb_t)(struct dirent *entry, struct pcachesys_walk_ctx *walk_ctx);
+struct pcachesys_walk_ctx {
+        char path[PCACHE_PATH_LEN];
+	pcachesys_cb_t	cb;
+	void		*data;
+};
+
+int walk_cache_devs(struct pcachesys_walk_ctx *walk_ctx);
+int for_each_backing_dev(struct pcachesys_walk_ctx *walk_ctx);
 
 #endif // PCACHESYS_H

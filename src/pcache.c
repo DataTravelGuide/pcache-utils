@@ -306,28 +306,38 @@ int pcache_cache_stop(pcache_opt_t *opt)
 	return pcachesys_write_value(SYSFS_PCACHE_CACHE_UNREGISTER, tr_buff);
 }
 
+static int cache_dev_list_cb(struct dirent *entry, struct pcachesys_walk_ctx *walk_ctx)
+{
+	unsigned int cache_dev_id;
+	struct pcache_cache pcache_cache;
+	json_t *array = walk_ctx->data;
+	json_t *json_obj;
+	int ret;
+
+	cache_dev_id = strtoul(entry->d_name + strlen("cache_dev"), NULL, 10);
+	ret = pcachesys_cache_init(&pcache_cache, cache_dev_id);
+	if (ret)
+		return ret;
+
+	json_obj = pcache_cache_to_json(&pcache_cache);
+	json_array_append_new(array, json_obj);
+
+	return 0;
+}
+
 int pcache_cache_list(pcache_opt_t *opt)
 {
 	char tr_buff[PCACHE_PATH_LEN * 3] = {0};
 	struct pcache_cache pcache_cache;
 	json_t *array = json_array();
 	int ret = 0;
+	struct pcachesys_walk_ctx walk_ctx = { 0 };
 
-	for (int i = 0; i < PCACHE_CACHE_MAX; i++) {
-		ret = pcachesys_cache_init(&pcache_cache, i);
-		if (ret == -ENOENT) {
-			ret = 0;
-			break;
-		}
+	walk_ctx.cb = cache_dev_list_cb;
+	walk_ctx.data = array;
+	strcpy(walk_ctx.path, SYSFS_PCACHE_DEVICES_PATH);
+	walk_cache_devs(&walk_ctx);
 
-		if (ret < 0) {
-			json_decref(array);
-			return ret;
-		}
-
-		json_t *json_obj = pcache_cache_to_json(&pcache_cache);
-		json_array_append_new(array, json_obj);
-	}
 	// Print the JSON array
 	char *json_str = json_dumps(array, JSON_INDENT(4));
 	printf("%s\n", json_str);
