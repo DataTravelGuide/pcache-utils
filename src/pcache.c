@@ -45,6 +45,7 @@ static void usage ()
 	fprintf(stdout, "                   -p, --path <path>            Specify backing path\n");
 	fprintf(stdout, "                   -q, --queues <queues>        number of queues\n");
 	fprintf(stdout, "                   -s, --cache-size <size>      Set cache size (units: K, M, G)\n");
+	fprintf(stdout, "                   -x, --data-crc               Enable data CRC protection\n");
 	fprintf(stdout, "                   -h, --help                   Print this help message\n");
 	fprintf(stdout, "                   Example: %s backing-start -p /path -s 512M \n\n", PCACHE_PROGRAM_NAME);
 
@@ -93,6 +94,7 @@ static struct option long_options[] =
 	{"format", no_argument, 0, 'f'},
 	{"cache-size", required_argument,0, 's'},
 	{"force", no_argument, 0, 'F'},
+	{"data-crc", no_argument, 0, 'x'},
 	{0, 0, 0, 0},
 };
 
@@ -166,6 +168,9 @@ void pcache_options_parser(int argc, char* argv[], pcache_opt_t* options)
 			break;
 		case 'F':
 			options->co_force = true;
+			break;
+		case 'x':
+			options->co_data_crc = true;
 			break;
 		case 'b':
 			options->co_backing_id = strtoul(optarg, NULL, 10);
@@ -351,6 +356,9 @@ int pcache_backing_start(pcache_opt_t *options) {
 
 	if (options->co_cache_size != 0)
 	    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), ",cache_size=%u", options->co_cache_size);
+
+	if (options->co_data_crc)
+		snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), ",data_crc=1");
 
 	cache_adm_path(options->co_cache_id, adm_path, sizeof(adm_path));
 	ret = pcachesys_write_value(adm_path, cmd);

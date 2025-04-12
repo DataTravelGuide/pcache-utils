@@ -25,7 +25,7 @@ _pcache_completion() {
 					COMPREPLY=( $(compgen -W "${sub_commands}" -- "$cur") )
 					;;
 				backing-start)
-					sub_commands="-c --cache -p --path -q --queues -s --cache-size -h --help"
+					sub_commands="-c --cache -p --path -q --queues -s --cache-size -x --data-crc -h --help"
 					COMPREPLY=( $(compgen -W "${sub_commands}" -- "$cur") )
 					;;
 				backing-stop)

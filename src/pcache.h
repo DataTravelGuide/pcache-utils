@@ -35,6 +35,7 @@ struct pcache_options
 	char			co_path[PCACHE_PATH_LEN];
 	bool			co_force;
 	bool			co_format;
+	bool			co_data_crc;
 	unsigned int		co_cache_size;
 	unsigned int		co_cache_id;
 	unsigned int		co_backing_id;
